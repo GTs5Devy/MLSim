@@ -1,58 +1,60 @@
-# AC App Template by Hunter Vaners
-# ------------------------------
-#
-# Don't forget to rename assettocorsa\apps\python\Template_Assetto_Corsa_App
-#           by assettocorsa\apps\python\[Your_App_Name_Without_Spaces]
-#  and
-# the file Template_Assetto_Corsa_App.py
-#           by Your_App_Name_Without_Spaces.py
-#
-# ------------------------------
-
 import ac
 import acsys
-from third_party.sim_info import *
+from third_party.sim_info import SimInfo 
 
+# Set app name
+appName = "Lap Time Optimizer"
+width, height = 300, 150  # App window size
 
-
-
-appName = ">YOUR APP NAME HERE<"
-width, height = 800 , 800 # width and height of the app's window
-
+# Initialize SimInfo for telemetry
 simInfo = SimInfo()
 
+# Define labels globally
+speed_label = None
+gear_label = None
+lap_time_label = None
 
+def acMain(ac_version):
+    global appWindow, speed_label, gear_label, lap_time_label 
 
-def acMain(ac_version):#----------------------------- App window Init
-
-    # Don't forget to put anything you'll need to update later as a global variables
-    global appWindow # <- you'll need to update your window in other functions.
-
+    # Create App Window
     appWindow = ac.newApp(appName)
     ac.setTitle(appWindow, appName)
     ac.setSize(appWindow, width, height)
 
-    ac.addRenderCallback(appWindow, appGL) # -> links this app's window to an OpenGL render function
+    # Add labels to display telemetry data
+    speed_label = ac.addLabel(appWindow, "Speed: 0 km/h")
+    ac.setPosition(speed_label, 20, 30)
+
+    gear_label = ac.addLabel(appWindow, "Gear: N")
+    ac.setPosition(gear_label, 20, 60)
+
+    lap_time_label = ac.addLabel(appWindow, "Lap Time: 0:00.000")
+    ac.setPosition(lap_time_label, 20, 90)
 
     return appName
 
-
-
-
-
-def appGL(deltaT):#-------------------------------- OpenGL UPDATE
+def acUpdate(deltaT):
     """
-    This is where you redraw your openGL graphics
-    if you need to use them .
+    This function updates the app window with live data from Assetto Corsa.
     """
-    pass # -> Delete this line if you do something here !
+    global speed_label, gear_label, lap_time_label 
 
+    # Get speed (in km/h)
+    speed = simInfo.physics.speedKmh
+    ac.setText(speed_label, f"Speed: {int(speed)} km/h")
 
+    # Get gear (N for neutral, 1-6 for gears, R for reverse)
+    gear = simInfo.physics.gear
+    gear_text = "N" if gear == 0 else "R" if gear == -1 else str(gear)
+    ac.setText(gear_label, f"Gear: {gear_text}")
 
-
-def acUpdate(deltaT):#-------------------------------- AC UPDATE
-    """
-    This is where you update your app window ( != OpenGL graphics )
-    such as : labels , listener , ect ...
-    """
-    pass # -> Delete this line if you do something here !
+    # Get lap time (in milliseconds, convert to mm:ss.sss format)
+    lap_time_ms = simInfo.physics.lapTime
+    if lap_time_ms > 0:
+        minutes = (lap_time_ms // 60000) % 60
+        seconds = (lap_time_ms // 1000) % 60
+        milliseconds = lap_time_ms % 1000
+        ac.setText(lap_time_label, f"Lap Time: {minutes}:{seconds:02d}.{milliseconds:03d}")
+    else:
+        ac.setText(lap_time_label, "Lap Time: 0:00.000")
